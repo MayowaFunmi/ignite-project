@@ -17,13 +17,41 @@ namespace ignite_project.Controllers
     /// <returns></returns>
     [HttpPost]
     [Route("generate-invitation-code")]
-    //[Authorize(Policy = "AdminSuperAdmin")]
+    [Authorize(Policy = "AdminSuperAdmin")]
 
     public async Task<IActionResult> InvitationCode()
     {
       try
       {
         var response = await _adminService.InviteCode();
+        return response.Status switch
+        {
+          "BadRequest" => BadRequest(response),
+          _=> Ok(response)
+        };
+      }
+      catch (Exception ex)
+      {
+        return StatusCode(500, $"An error occurred while processing your request - {ex.Message}");
+      }
+    }
+    #endregion
+
+    #region Get All users
+    /// <summary>
+    /// Get all users
+    /// </summary>
+    /// <param name=""></param>
+    /// <returns></returns>
+    [HttpPost]
+    [Route("all-users")]
+    [Authorize(Policy = "AdminSuperAdmin")]
+
+    public async Task<IActionResult> AllUsers()
+    {
+      try
+      {
+        var response = await _adminService.GetAllUsers();
         return response.Status switch
         {
           "BadRequest" => BadRequest(response),

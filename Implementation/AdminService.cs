@@ -66,5 +66,64 @@ namespace ignite_project.Implementation
         };
       }
     }
+
+    public Task<GenericResponse> GetUserByCode(string code)
+    {
+        throw new NotImplementedException();
+    }
+
+    public async Task<GenericResponse> GetAllUsers()
+    {
+      try
+      {
+        _logger.LogInfo("Attempting to get all users");
+        var usersWithRoles = await _context.Users
+                .AsNoTracking()
+                .Select(user => new
+                {
+                  User = new UserDetails
+                  {
+                    Id = user.Id,
+                    Username = user.UserName ?? string.Empty,
+                    PhoneNumber = user.PhoneNumber ?? string.Empty,
+                    InvitationCode = user.InvitationCode ?? string.Empty,
+                    WalletAddress = user.WalletAddress ?? string.Empty,
+                    WalletBallance = user.WalletBallance,
+                    Location = user.Location ?? string.Empty,
+                    ActiveSubscription = user.ActiveSubscription,
+                    IsActive = user.IsActive,
+                    Ratings = user.Ratings,
+                    SignupCode = user.SignupCode ?? string.Empty,
+                    CreatedAt = user.CreatedAt,
+                    UpdatedAt = user.UpdatedAt,
+                  },
+                  Roles = _context.UserRoles
+                    .Where(ur => ur.UserId == user.Id)
+                    .Join(_context.Roles,
+                        ur => ur.RoleId,
+                        r => r.Id,
+                        (ur, r) => r.Name)
+                    .ToList()
+                })
+                .ToListAsync();
+
+          return new GenericResponse
+          {
+            Status = HttpStatusCode.OK.ToString(),
+            Message = "All Users retrieved successfully",
+            Data = usersWithRoles
+          };
+      }
+      catch (Exception ex)
+      {
+        _logger.LogError("Something went wrong while generating invitation code");
+        WatchLogger.LogError("Something went wrong while generating invitation code");
+        return new GenericResponse
+        {
+          Status = HttpStatusCode.InternalServerError.ToString(),
+          Message = $"Something went wrong while generating invitation code - {ex.Message}",
+        };
+      }
+    }
   }
 }

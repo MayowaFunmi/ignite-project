@@ -59,6 +59,7 @@ builder.Services.Configure<IdentityOptions>(options =>
 builder.Services.AddScoped<ILoggerManager, LoggerManager>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 builder.Services.AddCors(options =>
 {
