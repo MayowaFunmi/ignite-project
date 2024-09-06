@@ -6,6 +6,7 @@ namespace ignite_project.Models
   {
     public string InvitationCode { get; set; } = string.Empty;
     public string WalletAddress { get; set; } = string.Empty;
+    public string CryptoCoin { get; set; } = string.Empty;
     public int WalletBallance { get; set; }
     public string Location { get; set; } = string.Empty;
     public bool ActiveSubscription { get; set; } = false;

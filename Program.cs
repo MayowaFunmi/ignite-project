@@ -8,6 +8,7 @@ using ignite_project.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.Filters;
@@ -122,7 +123,17 @@ app.MapControllers();
 //     opt.WatchPagePassword = builder.Configuration["WatchDogParams:Password"];
 // });
 
+var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "FileBucket");
+if (!Directory.Exists(uploadPath))
+{
+    Directory.CreateDirectory(uploadPath);
+}
 
+app.UseStaticFiles(new StaticFileOptions()
+{
+    FileProvider = new PhysicalFileProvider(uploadPath),
+    RequestPath = new PathString("/FileBucket")
+});
 using (var scope = app.Services.CreateScope())
 {
     // Migrate DB

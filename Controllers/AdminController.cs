@@ -1,3 +1,4 @@
+using ignite_project.DTOs;
 using ignite_project.Interface;
 using ignite_project.Utilities;
 using Microsoft.AspNetCore.Authorization;
@@ -43,15 +44,15 @@ namespace ignite_project.Controllers
     /// </summary>
     /// <param name=""></param>
     /// <returns></returns>
-    [HttpPost]
-    [Route("all-users")]
+    [HttpGet]
+    [Route("show-all-users")]
     [Authorize(Policy = "AdminSuperAdmin")]
 
-    public async Task<IActionResult> AllUsers()
+    public async Task<IActionResult> AllUsers([FromQuery] PageRequest pageRequest)
     {
       try
       {
-        var response = await _adminService.GetAllUsers();
+        var response = await _adminService.GetAllUsers(pageRequest.Page, pageRequest.PageSize);
         return response.Status switch
         {
           "BadRequest" => BadRequest(response),
@@ -65,5 +66,63 @@ namespace ignite_project.Controllers
     }
     #endregion
     
+    #region InvitationCode
+    /// <summary>
+    /// Get user by user invite code
+    /// </summary>
+    /// <param name="code"></param>
+    /// <returns></returns>
+    [HttpGet]
+    [Route("get-user-by-code")]
+    [Authorize(Policy = "SuperAdmin")]
+
+    public async Task<IActionResult> UserByCode([FromQuery] string code)
+    {
+      try
+      {
+        var response = await _adminService.GetUserByCode(code);
+        return response.Status switch
+        {
+          "BadRequest" => BadRequest(response),
+          "NotFound" => NotFound(response),
+          _=> Ok(response)
+        };
+      }
+      catch (Exception ex)
+      {
+        return StatusCode(500, $"An error occurred while processing your request - {ex.Message}");
+      }
+    }
+    #endregion
+
+    #region Get Users By Role Name
+    /// <summary>
+    /// Get users by role
+    /// </summary>
+    /// <param name="roleName"></param>
+    /// <returns></returns>
+    [HttpGet]
+    [Route("get-users-by-role")]
+    [Authorize(Policy = "SuperAdmin")]
+
+    public async Task<IActionResult> UsersByRole([FromQuery] string roleName)
+    {
+      try
+      {
+        var response = await _adminService.GetUsersByRole(roleName);
+        return response.Status switch
+        {
+          "BadRequest" => BadRequest(response),
+          "NotFound" => NotFound(response),
+          _=> Ok(response)
+        };
+      }
+      catch (Exception ex)
+      {
+        return StatusCode(500, $"An error occurred while processing your request - {ex.Message}");
+      }
+    }
+
+    #endregion
   }
 }

@@ -5,7 +5,7 @@ namespace ignite_project.Interface
   public interface IUserService
   {
     Task<GenericResponse> GetUserById(string userId);
-    Task<GenericResponse> GetUserByRole(string roleName);
-    Task<GenericResponse> AddUserProfile(string userId, UserProfileDto userProfileDto);
+    Task<GenericResponse> AddUserWalletAddress(AddWalletDto addWalletDto);
+    Task<GenericResponse> AddUserProfilePicture(AddProfilePictureDto pictureDto);
   }
 }

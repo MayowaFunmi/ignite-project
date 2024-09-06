@@ -5,7 +5,8 @@ namespace ignite_project.Interface
   public interface IAdminService
   {
     Task<GenericResponse> InviteCode();
-    Task<GenericResponse> GetAllUsers();
+    Task<PaginationResponse> GetAllUsers(int page, int pageSize);
     Task<GenericResponse> GetUserByCode(string code);
+    Task<GenericResponse> GetUsersByRole(string roleName);
   }
 }
