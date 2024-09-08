@@ -1,4 +1,5 @@
 using System.Net;
+using ignite_project.Constants;
 using ignite_project.Data;
 using ignite_project.DTOs;
 using ignite_project.Interface;
@@ -104,9 +105,12 @@ namespace ignite_project.Implementation
                       WalletAddress = user.WalletAddress ?? string.Empty,
                       WalletBallance = user.WalletBallance,
                       Location = user.Location ?? string.Empty,
+                      ProfilePicture = user.ProfilePicture ?? string.Empty,
                       ActiveSubscription = user.ActiveSubscription,
                       IsActive = user.IsActive,
                       Ratings = user.Ratings,
+                      WithdrawalRequests = user.WithdrawalRequests,
+                      TotalWithdrawals = user.TotalWithdrawals,
                       SignupCode = user.SignupCode ?? string.Empty,
                       CreatedAt = user.CreatedAt,
                       UpdatedAt = user.UpdatedAt,
@@ -176,9 +180,12 @@ namespace ignite_project.Implementation
                     WalletAddress = user.WalletAddress ?? string.Empty,
                     WalletBallance = user.WalletBallance,
                     Location = user.Location ?? string.Empty,
+                    ProfilePicture = user.ProfilePicture ?? string.Empty,
                     ActiveSubscription = user.ActiveSubscription,
                     IsActive = user.IsActive,
                     Ratings = user.Ratings,
+                    WithdrawalRequests = user.WithdrawalRequests,
+                    TotalWithdrawals = user.TotalWithdrawals,
                     SignupCode = user.SignupCode ?? string.Empty,
                     CreatedAt = user.CreatedAt,
                     UpdatedAt = user.UpdatedAt,
@@ -232,9 +239,12 @@ namespace ignite_project.Implementation
                     CryptoCoin = user.CryptoCoin ?? string.Empty,
                     WalletBallance = user.WalletBallance,
                     Location = user.Location ?? string.Empty,
+                    ProfilePicture = user.ProfilePicture ?? string.Empty,
                     ActiveSubscription = user.ActiveSubscription,
                     IsActive = user.IsActive,
                     Ratings = user.Ratings,
+                    WithdrawalRequests = user.WithdrawalRequests,
+                    TotalWithdrawals = user.TotalWithdrawals,
                     SignupCode = user.SignupCode ?? string.Empty,
                     CreatedAt = user.CreatedAt,
                     UpdatedAt = user.UpdatedAt,
@@ -268,6 +278,98 @@ namespace ignite_project.Implementation
         _logger.LogError("Something went wrong while generating invitation code");
         WatchLogger.LogError("Something went wrong while generating invitation code");
         return new PaginationResponse
+        {
+          Status = HttpStatusCode.InternalServerError.ToString(),
+          Message = $"Something went wrong while generating invitation code - {ex.Message}",
+        };
+      }
+    }
+
+    public async Task<GenericResponse> ApproveWithdrawalRequest(ApproveRequestDto requestDto)
+    {
+      if (!string.IsNullOrEmpty(requestDto.UserId) || 
+          requestDto.Amount == 0 ||
+          !string.IsNullOrEmpty(requestDto.RequestId)
+        )
+      {
+        return new GenericResponse
+        {
+          Status = HttpStatusCode.BadRequest.ToString(),
+          Message = "All fields cannot be empty"
+        };
+      }
+      try
+      {
+        _logger.LogInfo("Attempting to approve withdrawal request");
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == requestDto.UserId);
+        if (user == null)
+        {
+          return new GenericResponse
+          {
+            Status = HttpStatusCode.NotFound.ToString(),
+            Message = "User not found"
+          };
+        }
+
+        var request = await _context.WithdrawalRequests.FirstOrDefaultAsync(w => w.Id.ToString() == requestDto.RequestId && w.UserId == user.Id);
+        if (request == null)
+        {
+          return new GenericResponse
+          {
+            Status = HttpStatusCode.NotFound.ToString(),
+            Message = "withdrawal request for user does not exist"
+          };
+        }
+
+        if (requestDto.Status)
+        {
+          user.WalletBallance -= requestDto.Amount;
+          user.ApprovedRequests ++;
+          user.TotalWithdrawals += requestDto.Amount;
+          request.Status = WithdrawalStatus.APPROVED;
+          request.ApprovedAt = DateTime.UtcNow;
+          _context.Users.Update(user);
+          _context.WithdrawalRequests.Update(request);
+          var res = await _context.SaveChangesAsync();
+          if (res > 0)
+          {
+            return new GenericResponse
+            {
+              Status = HttpStatusCode.OK.ToString(),
+              Message = "withdrawal request approved successfully"
+            };
+          }
+          else
+          {
+            request.Status = WithdrawalStatus.INCOMPLETE;
+            _context.WithdrawalRequests.Update(request);
+            await _context.SaveChangesAsync();
+            return new GenericResponse
+            {
+              Status = HttpStatusCode.BadRequest.ToString(),
+              Message = "failed to approve withdrawal request"
+            };
+          }
+        }
+        else
+        {
+          user.RejectedRequests ++;
+          request.Status = WithdrawalStatus.REJECTED;
+          _context.WithdrawalRequests.Update(request);
+          _context.Users.Update(user);
+          await _context.SaveChangesAsync();
+          return new GenericResponse
+          {
+            Status = HttpStatusCode.OK.ToString(),
+            Message = "withdrawal request rejected"
+          };
+        }
+      }
+      catch (Exception ex)
+      {
+        _logger.LogError("Something went wrong while generating invitation code");
+        WatchLogger.LogError("Something went wrong while generating invitation code");
+        return new GenericResponse
         {
           Status = HttpStatusCode.InternalServerError.ToString(),
           Message = $"Something went wrong while generating invitation code - {ex.Message}",

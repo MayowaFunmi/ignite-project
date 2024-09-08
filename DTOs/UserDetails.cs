@@ -8,11 +8,14 @@ namespace ignite_project.DTOs
     public string InvitationCode { get; set; } = string.Empty;
     public string WalletAddress { get; set; } = string.Empty;
     public string CryptoCoin { get; set; } = string.Empty;
-    public int WalletBallance { get; set; }
+    public decimal WalletBallance { get; set; }
     public string Location { get; set; } = string.Empty;
+    public string ProfilePicture { get; set; } = string.Empty;
     public bool ActiveSubscription { get; set; } = false;
     public bool IsActive { get; set; } = true;
-    public int Ratings { get; set; } = 0;
+    public decimal Ratings { get; set; } = 0;
+    public int WithdrawalRequests { get; set; } = 0;
+    public decimal TotalWithdrawals { get; set; } = 0;
     public string SignupCode { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; }

@@ -124,5 +124,35 @@ namespace ignite_project.Controllers
     }
 
     #endregion
+
+    #region Approve Withdrawal Request
+    /// <summary>
+    /// Approve Withdrawal Request
+    /// </summary>
+    /// <param name="requestDto"></param>
+    /// <returns></returns>
+    [HttpPut]
+    [Route("approve-withdrawal-request")]
+    [Authorize(Policy = "SuperAdmin")]
+
+    public async Task<IActionResult> AproveRequest([FromBody] ApproveRequestDto requestDto)
+    {
+      try
+      {
+        var response = await _adminService.ApproveWithdrawalRequest(requestDto);
+        return response.Status switch
+        {
+          "BadRequest" => BadRequest(response),
+          "NotFound" => NotFound(response),
+          _=> Ok(response)
+        };
+      }
+      catch (Exception ex)
+      {
+        return StatusCode(500, $"An error occurred while processing your request - {ex.Message}");
+      }
+    }
+
+    #endregion
   }
 }

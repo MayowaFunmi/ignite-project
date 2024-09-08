@@ -9,6 +9,8 @@ namespace ignite_project.Data
   {
 
     public DbSet<SignUpCode> SignUpCodes { get; set; }
+    public DbSet<WithdrawalRequest> WithdrawalRequests { get; set; }
+    
     protected override void OnModelCreating(ModelBuilder builder)
     {
       base.OnModelCreating(builder);

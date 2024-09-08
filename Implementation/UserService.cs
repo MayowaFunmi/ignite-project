@@ -1,11 +1,11 @@
 using System.Net;
 using System.Text.RegularExpressions;
+using ignite_project.Constants;
 using ignite_project.Data;
 using ignite_project.DTOs;
 using ignite_project.Interface;
 using ignite_project.Models;
 using ignite_project.Utilities;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Webp;
@@ -14,10 +14,9 @@ using WatchDog;
 
 namespace ignite_project.Implementation
 {
-  public class UserService(ILoggerManager logger, IConfiguration configuration, ApplicationDbContext context) : IUserService
+  public class UserService(ILoggerManager logger, ApplicationDbContext context) : IUserService
   {
     private readonly ILoggerManager _logger = logger;
-    private readonly IConfiguration _configuration = configuration;
     private readonly ApplicationDbContext _context = context;
 
     public async Task<GenericResponse> AddUserWalletAddress(AddWalletDto addWalletDto)
@@ -107,7 +106,15 @@ namespace ignite_project.Implementation
           };
         }
 
-        return await AddProfilePicture(pictureDto.File, user.UserName!);
+        var addPicture = await AddProfilePicture(pictureDto.File, user.UserName!);
+        if (addPicture.Status == HttpStatusCode.OK.ToString())
+        {
+          user.ProfilePicture = $"/FileBucket/{user.UserName}.webp";
+          _context.Users.Update(user);
+          await _context.SaveChangesAsync();
+          return addPicture;
+        }
+        return addPicture;
       }
       catch (Exception ex)
       {
@@ -149,9 +156,12 @@ namespace ignite_project.Implementation
                     WalletAddress = user.WalletAddress ?? string.Empty,
                     WalletBallance = user.WalletBallance,
                     Location = user.Location ?? string.Empty,
+                    ProfilePicture = user.ProfilePicture ?? string.Empty,
                     ActiveSubscription = user.ActiveSubscription,
                     IsActive = user.IsActive,
                     Ratings = user.Ratings,
+                    WithdrawalRequests = user.WithdrawalRequests,
+                    TotalWithdrawals = user.TotalWithdrawals,
                     SignupCode = user.SignupCode ?? string.Empty,
                     CreatedAt = user.CreatedAt,
                     UpdatedAt = user.UpdatedAt,
@@ -179,6 +189,90 @@ namespace ignite_project.Implementation
           Message = "User retrieved successfully",
           Data = user
         };
+      }
+      catch (Exception ex)
+      {
+        _logger.LogError("Something went wrong while generating invitation code");
+        WatchLogger.LogError("Something went wrong while generating invitation code");
+        return new GenericResponse
+        {
+          Status = HttpStatusCode.InternalServerError.ToString(),
+          Message = $"Something went wrong while generating invitation code - {ex.Message}",
+        };
+      }
+    }
+
+    public async Task<GenericResponse> UserWithdrawal(WithdrawalRequestDto requestDto)
+    {
+      if (!string.IsNullOrEmpty(requestDto.UserId) || 
+          requestDto.Amount == 0 ||
+          !string.IsNullOrEmpty(requestDto.WalletAddress)
+        )
+      {
+        return new GenericResponse
+        {
+          Status = HttpStatusCode.BadRequest.ToString(),
+          Message = "All fields cannot be empty"
+        };
+      }
+      try
+      {
+        _logger.LogInfo($"Attempting to submit withdrawal request");
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == requestDto.UserId);
+        if (user == null)
+        {
+          return new GenericResponse
+          {
+            Status = HttpStatusCode.NotFound.ToString(),
+            Message = "User not found"
+          };
+        }
+
+        if (user.WalletBallance < requestDto.Amount)
+        {
+          return new GenericResponse
+          {
+            Status = HttpStatusCode.BadRequest.ToString(),
+            Message = "You have insufficient balance"
+          };
+        }
+
+        if (user.WalletAddress != requestDto.WalletAddress)
+        {
+          return new GenericResponse
+          {
+            Status = HttpStatusCode.BadRequest.ToString(),
+            Message = "Wallet address is incorrect"
+          };
+        }
+
+        var newRequest = new WithdrawalRequest
+        {
+          UserId = user.Id,
+          Amount = requestDto.Amount,
+          WalletAddress = requestDto.WalletAddress,
+          Status = WithdrawalStatus.PENDING
+        };
+        user.WithdrawalRequests ++;
+        _context.WithdrawalRequests.Add(newRequest);
+        _context.Users.Update(user);
+        var res = await _context.SaveChangesAsync();
+        if (res > 0)
+        {
+          return new GenericResponse
+          {
+            Status = HttpStatusCode.OK.ToString(),
+            Message = "Withdrawal request submitted successfully"
+          };
+        }
+        else
+        {
+          return new GenericResponse
+          {
+            Status = HttpStatusCode.BadRequest.ToString(),
+            Message = "Failed to submit withdrawal request"
+          };
+        }
       }
       catch (Exception ex)
       {

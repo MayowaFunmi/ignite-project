@@ -5,25 +5,83 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ignite_project.Controllers
 {
-  public class UserController(IUserService userService) : BaseController
+  public class AccountController(IAccountService accountService) : BaseController
   {
-    private readonly IUserService _userService = userService;
+    private readonly IAccountService _accountService = accountService;
 
-    #region Get User By Id
+    #region Get All Withdrawal Requests
     /// <summary>
-    /// Get user by user id
+    /// Get All Withdrawal Requests
+    /// </summary>
+    /// <param name="pageRequest"></param>
+    /// <returns></returns>
+    [HttpGet]
+    [Route("get-all-withdrawal-requests")]
+    [Authorize(Policy = "SuperAdmin")]
+
+    public async Task<IActionResult> AllWithdrawalRequest([FromQuery] PageRequest pageRequest)
+    {
+      try
+      {
+        var response = await _accountService.GetAllWithdrawalRequests(pageRequest.Page, pageRequest.PageSize);
+        return response.Status switch
+        {
+          "BadRequest" => BadRequest(response),
+          "NotFound" => NotFound(response),
+          _=> Ok(response)
+        };
+      }
+      catch (Exception ex)
+      {
+        return StatusCode(500, $"An error occurred while processing your request - {ex.Message}");
+      }
+    }
+    #endregion
+
+    #region Get Withdrawal Requests By Id
+    /// <summary>
+    /// Get Withdrawal Requests By Id
+    /// </summary>
+    /// <param name="requestId"></param>
+    /// <returns></returns>
+    [HttpGet]
+    [Route("get-withdrawal-request-by-id/{requestId}")]
+    [Authorize(Policy = "SuperAdmin")]
+
+    public async Task<IActionResult> WithdrawalRequestById(string requestId)
+    {
+      try
+      {
+        var response = await _accountService.GetWithdrawalRequestById(requestId);
+        return response.Status switch
+        {
+          "BadRequest" => BadRequest(response),
+          "NotFound" => NotFound(response),
+          _=> Ok(response)
+        };
+      }
+      catch (Exception ex)
+      {
+        return StatusCode(500, $"An error occurred while processing your request - {ex.Message}");
+      }
+    }
+    #endregion
+
+    #region Get Withdrawal Requests By User Id
+    /// <summary>
+    /// Get Withdrawal Requests By User Id
     /// </summary>
     /// <param name="userId"></param>
     /// <returns></returns>
     [HttpGet]
-    [Route("get-user-by-id/{userId}")]
-    [Authorize]
+    [Route("get-withdrawal-requests-by-user-id/{userId}")]
+    [Authorize(Policy = "SuperAdmin")]
 
-    public async Task<IActionResult> UserById(string userId)
+    public async Task<IActionResult> WithdrawalRequestByUserId(string userId)
     {
       try
       {
-        var response = await _userService.GetUserById(userId);
+        var response = await _accountService.GetWithdrawalRequestByUserId(userId);
         return response.Status switch
         {
           "BadRequest" => BadRequest(response),
@@ -38,79 +96,21 @@ namespace ignite_project.Controllers
     }
     #endregion
 
-    #region Add User Wallet Address
+    #region Get Withdrawal Requests By Status
     /// <summary>
-    /// Add User Wallet Address
+    /// Get Withdrawal Requests By Status
     /// </summary>
-    /// <param name="addWalletDto"></param>
+    /// <param name="status"></param>
     /// <returns></returns>
-    [HttpPut]
-    [Route("add-user-water-address")]
-    [Authorize]
+    [HttpGet]
+    [Route("get-withdrawal-requests-by-status")]
+    [Authorize(Policy = "SuperAdmin")]
 
-    public async Task<IActionResult> AddWalletAddress([FromBody] AddWalletDto addWalletDto)
+    public async Task<IActionResult> WithdrawalRequestByStatus(string status)
     {
       try
       {
-        var response = await _userService.AddUserWalletAddress(addWalletDto);
-        return response.Status switch
-        {
-          "BadRequest" => BadRequest(response),
-          "NotFound" => NotFound(response),
-          _=> Ok(response)
-        };
-      }
-      catch (Exception ex)
-      {
-        return StatusCode(500, $"An error occurred while processing your request - {ex.Message}");
-      }
-    }
-    #endregion
-
-    #region Add User Profile Picture
-    /// <summary>
-    /// Add User Profile Picture
-    /// </summary>
-    /// <param name="pictureDto"></param>
-    /// <returns></returns>
-    [HttpPut]
-    [Route("add-user-profile-picture")]
-    [Authorize]
-
-    public async Task<IActionResult> AddProfilePicture([FromForm] AddProfilePictureDto pictureDto)
-    {
-      try
-      {
-        var response = await _userService.AddUserProfilePicture(pictureDto);
-        return response.Status switch
-        {
-          "BadRequest" => BadRequest(response),
-          "NotFound" => NotFound(response),
-          _=> Ok(response)
-        };
-      }
-      catch (Exception ex)
-      {
-        return StatusCode(500, $"An error occurred while processing your request - {ex.Message}");
-      }
-    }
-    #endregion
-
-    #region Submit withdrawal request
-    /// <summary>
-    /// Submit withdrawal request
-    /// </summary>
-    /// <param name="requestDto"></param>
-    /// <returns></returns>
-    [HttpPost]
-    [Route("submit-withdrawal-request")]
-    [Authorize]
-
-    public async Task<IActionResult> SubmitWithdrawalRequest([FromBody] WithdrawalRequestDto requestDto)
-    {
-      try
-      {
-        var response = await _userService.UserWithdrawal(requestDto);
+        var response = await _accountService.GetWithdrawalRequestByStatus(status);
         return response.Status switch
         {
           "BadRequest" => BadRequest(response),
