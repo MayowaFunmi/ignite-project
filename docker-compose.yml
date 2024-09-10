@@ -1,0 +1,29 @@
+services:
+  mysql:
+    image: mysql:8.0.33
+    environment:
+      MYSQL_ROOT_PASSWORD: MayowaRoot
+      MYSQL_DATABASE: ignite-projectDB
+      MYSQL_USER: mayowafunmi
+      MYSQL_PASSWORD: Mayowa#1502
+    ports:
+      - "3308:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pMayowaRoot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ignite-project:
+    image: ignite-project
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=mysql;Port=3306;Database=ignite-projectDB;User=mayowafunmi;Password=Mayowa#1502;
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    command: >
+      sh -c "dotnet ef database update &&
+            dotnet run"
